@@ -1,5 +1,5 @@
 <template>
-  <Alert v-if="isFormulaInvalid" type="error">
+  <Alert v-if="isFormulaInvalid && mode == 'simple'" type="error">
     <p>
       {{ $t('formulaInputField.errorInvalidFormula') }}
     </p>
@@ -11,6 +11,7 @@
   </Alert>
   <div v-else>
     <EditorContent
+      v-if="!isAdvancedMode"
       :id="forInput"
       ref="editor"
       class="form-input formula-input-field"
@@ -19,8 +20,31 @@
       :editor="editor"
       @data-component-clicked="dataComponentClicked"
     />
+    <FormInput
+      v-else
+      v-model="advancedFormulaValue"
+      type="text"
+      :class="classes"
+      role="textbox"
+      :disabled="disabled"
+      :placeholder="placeholder"
+      @input="emitAdvancedChange"
+    />
+
+    <div v-if="enableAdvancedMode" class="margin-top-1">
+      <label class="checkbox">
+        <Checkbox
+          :checked="isAdvancedMode"
+          :disabled="disabled"
+          @input="toggleMode()"
+        >
+          {{ $t('formulaInputField.advancedFormulaMode') }}
+        </Checkbox>
+      </label>
+    </div>
+
     <DataExplorer
-      v-if="isFocused"
+      v-if="isFocused && !isAdvancedMode"
       ref="dataExplorer"
       :nodes="nodes"
       :node-selected="nodeSelected"
@@ -47,6 +71,7 @@ import { mergeAttributes } from '@tiptap/core'
 import DataExplorer from '@baserow/modules/core/components/dataExplorer/DataExplorer'
 import { RuntimeGet } from '@baserow/modules/core/runtimeFormulaTypes'
 import { isElement, onClickOutside } from '@baserow/modules/core/utils/dom'
+import { isFormulaValid } from '@baserow/modules/core/formula'
 
 export default {
   name: 'FormulaInputField',
@@ -97,6 +122,16 @@ export default {
       required: false,
       default: false,
     },
+    enableAdvancedMode: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    mode: {
+      type: String,
+      required: false,
+      default: 'simple',
+    },
   },
   data() {
     return {
@@ -106,12 +141,17 @@ export default {
       dataNodeSelected: null,
       isFocused: false,
       ignoreNextBlur: false,
+      advancedFormulaValue: this.value,
     }
   },
   computed: {
+    isAdvancedMode() {
+      return this.mode === 'advanced'
+    },
     classes() {
       return {
         'form-input--disabled': this.disabled,
+        'form-input--error': this.isFormulaInvalid,
         'formula-input-field--small': this.small,
         'formula-input-field--focused': !this.disabled && this.isFocused,
         'formula-input-field--disabled': this.disabled,
@@ -153,7 +193,14 @@ export default {
       ]
     },
     htmlContent() {
+      if (this.isAdvancedMode) {
+        return ''
+      }
+
       try {
+        if (!this.content) {
+          return generateHTML(this.toContent(''), this.extensions)
+        }
         return generateHTML(this.content, this.extensions)
       } catch (e) {
         console.error('Error while parsing formula content', this.value)
@@ -162,6 +209,9 @@ export default {
       }
     },
     wrapperContent() {
+      if (this.isAdvancedMode || !this.editor) {
+        return null
+      }
       return this.editor.getJSON()
     },
     nodes() {
@@ -182,6 +232,11 @@ export default {
         this.$refs.dataExplorer?.hide()
         this.unSelectNode()
       } else {
+        // Don't show data explorer in Advanced mode
+        if (this.isAdvancedMode) {
+          return
+        }
+
         // Wait for the data explorer to appear in the DOM.
         await this.$nextTick()
 
@@ -218,6 +273,12 @@ export default {
       }
     },
     value(value) {
+      // In advanced mode, just update the value directly
+      if (this.isAdvancedMode) {
+        this.advancedFormulaValue = value
+        return
+      }
+
       if (!_.isEqual(value, this.toFormula(this.wrapperContent))) {
         const content = this.toContent(value)
 
@@ -236,9 +297,24 @@ export default {
       },
       deep: true,
     },
+
+    isAdvancedMode(newValue) {
+      if (newValue) {
+        // When switching to advanced mode, preserve current value
+        this.advancedFormulaValue = this.value
+        this.isFormulaInvalid = false
+      } else {
+        // When switching to simple mode, clear the value to avoid formula parsing errors
+        this.advancedFormulaValue = ''
+        this.$emit('input', this.advancedFormulaValue)
+      }
+    },
   },
   mounted() {
-    this.content = this.toContent(this.value)
+    if (!this.isAdvancedMode) {
+      this.content = this.toContent(this.value)
+    }
+
     this.editor = new Editor({
       content: this.htmlContent,
       editable: !this.disabled,
@@ -263,9 +339,15 @@ export default {
       this.$emit('input', '')
     },
     emitChange() {
-      if (!this.isFormulaInvalid) {
-        this.$emit('input', this.toFormula(this.wrapperContent))
+      if (this.isFormulaInvalid) {
+        return
       }
+
+      const formulaValue = this.toFormula(this.wrapperContent)
+      this.$emit('input', formulaValue)
+    },
+    toggleMode() {
+      this.$emit('mode-changed', this.mode === 'simple' ? 'advanced' : 'simple')
     },
     onUpdate() {
       this.unSelectNode()
@@ -357,6 +439,14 @@ export default {
       if (this.dataNodeSelected) {
         this.dataNodeSelected.attrs.isSelected = false
         this.dataNodeSelected = null
+      }
+    },
+    emitAdvancedChange() {
+      if (isFormulaValid(this.advancedFormulaValue)) {
+        this.isFormulaInvalid = false
+        this.$emit('input', this.advancedFormulaValue)
+      } else {
+        this.isFormulaInvalid = true
       }
     },
   },
