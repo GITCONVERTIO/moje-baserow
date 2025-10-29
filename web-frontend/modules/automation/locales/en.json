@@ -1,20 +1,11 @@
-
 {
   "welcomeGuidedTourStep": {
     "title": "Welcome to Baserow Automations!",
     "content": "Let's take a quick tour. You'll see how to set up triggers, add actions, test your workflow, and publish it — no coding required."
   },
-  "triggerGuidedTourStep": {
-    "title": "Workflows start with a trigger",
-    "content": "Every workflow begins with a trigger. By default, this is an interval trigger, but you can replace it with other types to suit your needs. Triggers can be replaced, but not deleted."
-  },
-  "actionGuidedTourStep": {
-    "title": "Workflows then execute actions",
-    "content": "Add one or more actions after your trigger to define what the workflow should do. Click the highlighted button to get started."
-  },
-  "nodeSidepanelGuidedTourStep": {
-    "title": "Configure your steps",
-    "content": "Select a trigger or action to configure it in the side panel. Each step's settings can be adjusted here."
+  "graphGuidedTourStep": {
+    "title": "Manage your workflow graph here",
+    "content": "Create a trigger and actions here to define what the workflow should do. Select a trigger or action to configure it in the side panel."
   },
   "testRunGuidedTourStep": {
     "title": "Test your workflow",
@@ -88,6 +79,8 @@
     "lastPublished": "Last published"
   },
   "dataProviderType": {
+    "currentIteration": "Current iteration",
+    "item": "Item",
     "previousNode": "Previous node"
   },
   "nodeSidePanel": {
@@ -118,9 +111,12 @@
     "httpRequestLabel": "Send an HTTP request",
     "smtpEmailLabel": "Send an email",
     "routerLabel": "Follow 1 of {edgeCount} branches",
+    "iterationLabel": "Iterate on items",
     "routerDefaultEdgeLabelFallback": "Default",
     "routerWithOutputNodesDeleteError": "Cannot be deleted until its {outputCount} output nodes are removed.",
     "routerWithOutputNodesReplaceError": "Cannot be replaced until its {outputCount} output nodes are removed.",
+    "iteratorWithChildrenNodesDeleteError": "Cannot be deleted until its child nodes are removed.",
+    "iteratorWithChildrenNodesReplaceError": "Cannot be replaced until its child nodes are removed.",
     "periodicTriggerLabel": "Periodic trigger"
   },
   "workflowNode": {
@@ -132,14 +128,13 @@
     "beforeLabelAction": "Then",
     "beforeLabelCondition": "If condition is met",
     "beforeLabelConditionDefault": "If no condition(s) are met",
+    "beforeLabelRepeat": "For each item",
     "moreEdit": "Edit",
     "moreReplace": "Replace",
-    "nodeOptions": "Node options",
-    "displayLabelDebug": "ID: {id} | Prev: {previousNodeId} | {outputUid}"
+    "nodeOptions": "Node options"
   },
   "workflowAddNode": {
-    "displayTitle": "Create automation node",
-    "displayTitleDebug": "ID: {id} | {outputUid}"
+    "displayTitle": "Create automation node"
   },
   "workflowNodeContext": {
     "searchPlaceholderTrigger": "Search for a trigger...",
@@ -177,16 +172,19 @@
     "deactivatedTitle": "Periodic trigger deactivated",
     "deactivatedText": "This periodic trigger has been automatically deactivated due to consecutive failures."
   },
+  "workflowEditor": {
+    "chooseEvent": "Choose an event..."
+  },
   "simulateDispatch": {
     "sampleDataLabel": "Output",
-    "triggerNodeAwaitingEvent": "This trigger node is waiting for an event.",
+    "triggerNodeAwaitingEvent": "The node is waiting. Please manually trigger the event to populate the payload and complete the test.",
     "errorNodeNotConfigured": "The Node must be configured before it can be tested.",
-    "errorPreviousNodeNotConfigured": "All previous nodes must be configured.",
-    "errorPreviousNodesNotTested": "All previous nodes must be tested.",
-    "buttonLabelShowPayload": "Show payload",
+    "errorPreviousNodeNotConfigured": "The previous node \"{node}\" must be configured.",
+    "errorPreviousNodesNotTested": "The previous node \"{node}\" must be tested first.",
     "buttonLabelTest": "Test event",
     "buttonLabelTestAgain": "Test event again",
     "testNodeDescription": "Test this event to confirm the configuration is correct. Data from this test can be used in later steps.",
+    "buttonLabelShowPayload": "Show payload",
     "sampleDataModalTitle": "Payload for {nodeLabel}",
     "sampleDataModalSubTitle": "JSON payload",
     "sampleDataCopy": "Copy",

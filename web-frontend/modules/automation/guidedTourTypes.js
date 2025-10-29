@@ -21,57 +21,25 @@ class WelcomeGuidedTourStep extends GuidedTourStep {
   }
 }
 
-class TriggerGuidedTourStep extends GuidedTourStep {
+class GraphGuidedTourStep extends GuidedTourStep {
   get title() {
-    return this.app.i18n.t('triggerGuidedTourStep.title')
+    return this.app.i18n.t('graphGuidedTourStep.title')
   }
 
   get content() {
-    return this.app.i18n.t('triggerGuidedTourStep.content')
+    return this.app.i18n.t('graphGuidedTourStep.content')
   }
 
   get selectors() {
-    return ['[data-highlight="automation-trigger"]']
+    return ['.workflow-editor']
   }
 
   get position() {
-    return 'bottom-center'
-  }
-}
-
-class ActionGuidedTourStep extends GuidedTourStep {
-  get title() {
-    return this.app.i18n.t('actionGuidedTourStep.title')
+    return 'center'
   }
 
-  get content() {
-    return this.app.i18n.t('actionGuidedTourStep.content')
-  }
-
-  get selectors() {
-    return ['[data-highlight="automation-add-node-btn"]']
-  }
-
-  get position() {
-    return 'bottom-center'
-  }
-}
-
-class NodeSidepanelGuidedTourStep extends GuidedTourStep {
-  get title() {
-    return this.app.i18n.t('nodeSidepanelGuidedTourStep.title')
-  }
-
-  get content() {
-    return this.app.i18n.t('nodeSidepanelGuidedTourStep.content')
-  }
-
-  get selectors() {
-    return ['[data-highlight="automation-node-sidepanel"]']
-  }
-
-  get position() {
-    return 'left-top'
+  get highlightPadding() {
+    return 0
   }
 }
 
@@ -173,9 +141,7 @@ export class AutomationGuidedTourType extends GuidedTourType {
   get steps() {
     return [
       new WelcomeGuidedTourStep(this.app),
-      new TriggerGuidedTourStep(this.app),
-      new ActionGuidedTourStep(this.app),
-      new NodeSidepanelGuidedTourStep(this.app),
+      new GraphGuidedTourStep(this.app),
       new HistoryGuidedTourStep(this.app),
       new TestRunGuidedTourStep(this.app),
       new PublishGuidedTourStep(this.app),
