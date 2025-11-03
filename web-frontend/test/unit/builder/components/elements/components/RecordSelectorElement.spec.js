@@ -38,7 +38,25 @@ describe('RecordSelectorElement', () => {
   test('does not paginate if API returns 400/404', async () => {
     const page = {
       id: 1,
-      dataSources: [{ id: 1, type: 'local_baserow_list_rows', table_id: 1 }],
+      dataSources: [
+        {
+          id: 1,
+          type: 'local_baserow_list_rows',
+          table_id: 1,
+          schema: {
+            type: 'array',
+            items: {
+              properties: {
+                field_1: {
+                  metadata: { primary: true },
+                  title: 'Name',
+                },
+                field_2: { metadata: {}, title: 'Other' },
+              },
+            },
+          },
+        },
+      ],
       elements: [],
     }
     const sharedPage = {
@@ -85,11 +103,11 @@ describe('RecordSelectorElement', () => {
       .onPost(url)
       .replyOnce(200, {
         results: [
-          { id: 1, order: 1, field_1: 'First' },
-          { id: 2, order: 1, field_1: 'Second' },
-          { id: 3, order: 1, field_1: 'Third' },
-          { id: 4, order: 1, field_1: 'Fourth' },
-          { id: 5, order: 1, field_1: 'Fifth' },
+          { id: 1, order: 1, Name: 'First' },
+          { id: 2, order: 1, Name: 'Second' },
+          { id: 3, order: 1, Name: 'Third' },
+          { id: 4, order: 1, Name: 'Fourth' },
+          { id: 5, order: 1, Name: 'Fifth' },
         ],
         has_next_page: true,
       })
@@ -131,7 +149,25 @@ describe('RecordSelectorElement', () => {
   test('resolves suffix formulas', async () => {
     const page = {
       id: 1,
-      dataSources: [{ id: 1, type: 'local_baserow_list_rows', table_id: 1 }],
+      dataSources: [
+        {
+          id: 1,
+          type: 'local_baserow_list_rows',
+          table_id: 1,
+          schema: {
+            type: 'array',
+            items: {
+              properties: {
+                field_1: {
+                  metadata: { primary: true },
+                  title: 'Name',
+                },
+                field_2: { metadata: {}, title: 'Other' },
+              },
+            },
+          },
+        },
+      ],
       elements: [],
     }
     const sharedPage = {
@@ -153,7 +189,7 @@ describe('RecordSelectorElement', () => {
       type: 'record_selector',
       data_source_id: page.dataSources[0].id,
       items_per_page: 5,
-      option_name_suffix: { formula: "'Suffix'" },
+      option_name_suffix: { formula: "'Suffix'", mode: 'simple' },
     }
     store.dispatch('element/forceCreate', { page, element })
 
@@ -176,8 +212,8 @@ describe('RecordSelectorElement', () => {
     const url = `builder/domains/published/data-source/${page.dataSources[0].id}/dispatch/`
     mockServer.mock.onPost(url).reply(200, {
       results: [
-        { id: 1, order: 1, field_1: 'First', field_2: 'One' },
-        { id: 2, order: 1, field_1: 'Second', field_2: 'Two' },
+        { id: 1, order: 1, Name: 'First', Other: 'One' },
+        { id: 2, order: 1, Name: 'Second', Other: 'Two' },
       ],
       has_next_page: false,
     })
@@ -188,7 +224,9 @@ describe('RecordSelectorElement', () => {
       .at(0)
       .find('.ab-dropdown__selected')
       .trigger('click')
+
     await flushPromises()
+
     expect(wrapper.element).toMatchSnapshot()
     expect(wrapper.find("span[title='First - Suffix']").exists()).toBeTruthy()
     expect(wrapper.find("span[title='Second - Suffix']").exists()).toBeTruthy()
