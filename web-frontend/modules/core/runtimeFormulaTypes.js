@@ -209,7 +209,7 @@ export class RuntimeConcat extends RuntimeFormulaFunction {
   }
 
   validateNumberOfArgs(args) {
-    return args.length >= 2
+    return args.length > 1
   }
 
   toNode(args) {
@@ -228,7 +228,10 @@ export class RuntimeConcat extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ["concat('Hello,', ' World!') = 'Hello, world!'"]
+    return [
+      "concat('Hello,', ' World!') = 'Hello, world!'",
+      "concat(get('data_source.1.0.field_1'), ' bar') = 'foo bar'",
+    ]
   }
 }
 
@@ -341,8 +344,8 @@ export class RuntimeAdd extends RuntimeFormulaFunction {
     ]
   }
 
-  execute(context, [a, b]) {
-    return a + b
+  execute(context, args) {
+    return args[0] + args[1]
   }
 
   getDescription() {
@@ -351,7 +354,7 @@ export class RuntimeAdd extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['2 + 3 = 5']
+    return ['2 + 3 = 5', '1 + 2 + 3 = 6']
   }
 }
 
@@ -379,8 +382,8 @@ export class RuntimeMinus extends RuntimeFormulaFunction {
     ]
   }
 
-  execute(context, [a, b]) {
-    return a - b
+  execute(context, args) {
+    return args[0] - args[1]
   }
 
   getDescription() {
@@ -389,7 +392,7 @@ export class RuntimeMinus extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['3 - 2 = 1']
+    return ['3 - 2 = 1', '5 - 2 - 1 = 2']
   }
 }
 
@@ -417,8 +420,8 @@ export class RuntimeMultiply extends RuntimeFormulaFunction {
     ]
   }
 
-  execute(context, [a, b]) {
-    return a * b
+  execute(context, args) {
+    return args[0] * args[1]
   }
 
   getDescription() {
@@ -427,7 +430,7 @@ export class RuntimeMultiply extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['2 * 3 = 6']
+    return ['2 * 3 = 6', '2 * 3 * 3 = 18']
   }
 }
 
@@ -455,8 +458,8 @@ export class RuntimeDivide extends RuntimeFormulaFunction {
     ]
   }
 
-  execute(context, [a, b]) {
-    return a / b
+  execute(context, args) {
+    return args[0] / args[1]
   }
 
   getDescription() {
@@ -465,7 +468,7 @@ export class RuntimeDivide extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['6 / 2 = 3']
+    return ['6 / 2 = 3', '15 / 2 / 2 = 3.75']
   }
 }
 
@@ -564,8 +567,8 @@ export class RuntimeGreaterThan extends RuntimeFormulaFunction {
 
   get args() {
     return [
-      new NumberBaserowRuntimeFormulaArgumentType(),
-      new NumberBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
     ]
   }
 
@@ -579,7 +582,7 @@ export class RuntimeGreaterThan extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['5 > 4 = true']
+    return ['5 > 4 = true', '"a" > "b" = false', '"Ambarella" > "fig" = false']
   }
 }
 
@@ -602,8 +605,8 @@ export class RuntimeLessThan extends RuntimeFormulaFunction {
 
   get args() {
     return [
-      new NumberBaserowRuntimeFormulaArgumentType(),
-      new NumberBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
     ]
   }
 
@@ -617,7 +620,7 @@ export class RuntimeLessThan extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['2 < 3 = true']
+    return ['2 < 3 = true', '"b" < "a" = false', '"Ambarella" < "fig" = true']
   }
 }
 
@@ -640,8 +643,8 @@ export class RuntimeGreaterThanOrEqual extends RuntimeFormulaFunction {
 
   get args() {
     return [
-      new NumberBaserowRuntimeFormulaArgumentType(),
-      new NumberBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
     ]
   }
 
@@ -655,13 +658,17 @@ export class RuntimeGreaterThanOrEqual extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['3 >= 2 = false']
+    return [
+      '3 >= 2 = false',
+      '"b" >= "a" = true',
+      '"Ambarella" >= "fig" = false',
+    ]
   }
 }
 
 export class RuntimeLessThanOrEqual extends RuntimeFormulaFunction {
   static getType() {
-    return 'less_than'
+    return 'less_than_or_equal'
   }
 
   static getFormulaType() {
@@ -678,8 +685,8 @@ export class RuntimeLessThanOrEqual extends RuntimeFormulaFunction {
 
   get args() {
     return [
-      new NumberBaserowRuntimeFormulaArgumentType(),
-      new NumberBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
     ]
   }
 
@@ -693,7 +700,11 @@ export class RuntimeLessThanOrEqual extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['3 <= 3 = true']
+    return [
+      '3 <= 3 = true',
+      '"a" <= "b" = false',
+      '"fig" <= "Ambarella" = false',
+    ]
   }
 }
 
@@ -812,12 +823,15 @@ export class RuntimeRound extends RuntimeFormulaFunction {
   get args() {
     return [
       new NumberBaserowRuntimeFormulaArgumentType(),
-      new NumberBaserowRuntimeFormulaArgumentType(),
+      new NumberBaserowRuntimeFormulaArgumentType({
+        optional: true,
+        castToInt: true,
+      }),
     ]
   }
 
   execute(context, args) {
-    // Default to 2 decimal places?
+    // Default to 2 decimal places
     let decimalPlaces = 2
 
     if (args.length === 2) {
@@ -865,7 +879,7 @@ export class RuntimeIsEven extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['is_even(12) = true']
+    return ['is_even(12) = true', 'is_even(13) = false']
   }
 }
 
@@ -896,7 +910,7 @@ export class RuntimeIsOdd extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ['is_odd(11) = true']
+    return ['is_odd(11) = true', 'is_odd(12) = false']
   }
 }
 
@@ -1097,7 +1111,7 @@ export class RuntimeMinute extends RuntimeFormulaFunction {
   }
 
   getExamples() {
-    return ["minute('2025-10-16T11:05:38') = '05'"]
+    return ["minute('2025-10-16T11:05:38') = '5'"]
   }
 }
 
@@ -1145,6 +1159,10 @@ export class RuntimeNow extends RuntimeFormulaFunction {
     return FORMULA_CATEGORY.DATE
   }
 
+  get args() {
+    return []
+  }
+
   execute(context, args) {
     return new Date()
   }
@@ -1165,6 +1183,10 @@ export class RuntimeToday extends RuntimeFormulaFunction {
 
   static getCategoryType() {
     return FORMULA_CATEGORY.DATE
+  }
+
+  get args() {
+    return []
   }
 
   execute(context, args) {
@@ -1238,7 +1260,7 @@ export class RuntimeRandomInt extends RuntimeFormulaFunction {
   execute(context, args) {
     const min = Math.ceil(args[0])
     const max = Math.floor(args[1])
-    return Math.floor(Math.random() * (max - min) + min)
+    return Math.floor(Math.random() * (max - min + 1) + min)
   }
 
   getDescription() {
@@ -1298,8 +1320,8 @@ export class RuntimeRandomBool extends RuntimeFormulaFunction {
     return FORMULA_CATEGORY.BOOLEAN
   }
 
-  validateNumberOfArgs(args) {
-    return args.length === 0
+  get args() {
+    return []
   }
 
   execute(context, args) {
@@ -1329,8 +1351,8 @@ export class RuntimeGenerateUUID extends RuntimeFormulaFunction {
     return FORMULA_CATEGORY.TEXT
   }
 
-  validateNumberOfArgs(args) {
-    return args.length === 0
+  get args() {
+    return []
   }
 
   execute(context, args) {
@@ -1360,16 +1382,12 @@ export class RuntimeIf extends RuntimeFormulaFunction {
     return FORMULA_CATEGORY.CONDITION
   }
 
-  validateNumberOfArgs(args) {
-    return args.length === 3
-  }
-
-  validateTypeOfArgs(args) {
-    const argType = new BooleanBaserowRuntimeFormulaArgumentType()
-    if (!argType.test(args[0])) {
-      return args[0]
-    }
-    return null
+  get args() {
+    return [
+      new BooleanBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
+      new AnyBaserowRuntimeFormulaArgumentType(),
+    ]
   }
 
   execute(context, args) {
@@ -1383,8 +1401,80 @@ export class RuntimeIf extends RuntimeFormulaFunction {
 
   getExamples() {
     return [
-      'if(true, true, false)',
-      "if(random_bool(), 'Random bool is true', 'Random bool is false')",
+      'if(true, true, false) = true',
+      "if(random_bool(), 'Random bool is true', 'Random bool is false') = 'Random bool is false'",
+    ]
+  }
+}
+
+export class RuntimeAnd extends RuntimeFormulaFunction {
+  static getType() {
+    return 'and'
+  }
+
+  static getFormulaType() {
+    return FORMULA_TYPE.FUNCTION
+  }
+
+  static getCategoryType() {
+    return FORMULA_CATEGORY.CONDITION
+  }
+
+  get args() {
+    return [
+      new BooleanBaserowRuntimeFormulaArgumentType(),
+      new BooleanBaserowRuntimeFormulaArgumentType(),
+    ]
+  }
+
+  execute(context, args) {
+    return args[0] && args[1]
+  }
+
+  getDescription() {
+    const { i18n } = this.app
+    return i18n.t('runtimeFormulaTypes.andDescription')
+  }
+
+  getExamples() {
+    return ['true && true = true', 'true && true && false = false']
+  }
+}
+
+export class RuntimeOr extends RuntimeFormulaFunction {
+  static getType() {
+    return 'or'
+  }
+
+  static getFormulaType() {
+    return FORMULA_TYPE.FUNCTION
+  }
+
+  static getCategoryType() {
+    return FORMULA_CATEGORY.CONDITION
+  }
+
+  get args() {
+    return [
+      new BooleanBaserowRuntimeFormulaArgumentType(),
+      new BooleanBaserowRuntimeFormulaArgumentType(),
+    ]
+  }
+
+  execute(context, args) {
+    return args[0] || args[1]
+  }
+
+  getDescription() {
+    const { i18n } = this.app
+    return i18n.t('runtimeFormulaTypes.orDescription')
+  }
+
+  getExamples() {
+    return [
+      'true || true = true',
+      'true || true || false = true',
+      'false || false = false',
     ]
   }
 }
