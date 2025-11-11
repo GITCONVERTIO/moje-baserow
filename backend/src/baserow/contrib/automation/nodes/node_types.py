@@ -102,7 +102,7 @@ class ContainerNodeTypeMixin:
         output: str,
     ):
         """
-        Check the container node is not moved inside it self.
+        Check the container node is not moved inside itself.
         """
 
         if node in reference_node.get_parent_nodes():
@@ -114,7 +114,8 @@ class ContainerNodeTypeMixin:
 
 
 class LocalBaserowUpsertRowNodeType(AutomationNodeActionNodeType):
-    type = "upsert_row"
+    type = "local_baserow_upsert_row"
+    compat_type = "upsert_row"
     service_type = LocalBaserowUpsertRowServiceType.type
 
     def get_pytest_params(self, pytest_data_fixture) -> Dict[str, int]:
@@ -123,35 +124,41 @@ class LocalBaserowUpsertRowNodeType(AutomationNodeActionNodeType):
 
 
 class LocalBaserowCreateRowNodeType(LocalBaserowUpsertRowNodeType):
-    type = "create_row"
+    type = "local_baserow_create_row"
+    compat_type = "create_row"
     model_class = LocalBaserowCreateRowActionNode
 
 
 class LocalBaserowUpdateRowNodeType(LocalBaserowUpsertRowNodeType):
-    type = "update_row"
+    type = "local_baserow_update_row"
+    compat_type = "update_row"
     model_class = LocalBaserowUpdateRowActionNode
 
 
 class LocalBaserowDeleteRowNodeType(AutomationNodeActionNodeType):
-    type = "delete_row"
+    type = "local_baserow_delete_row"
+    compat_type = "delete_row"
     model_class = LocalBaserowDeleteRowActionNode
     service_type = LocalBaserowDeleteRowServiceType.type
 
 
 class LocalBaserowGetRowNodeType(AutomationNodeActionNodeType):
-    type = "get_row"
+    type = "local_baserow_get_row"
+    compat_type = "get_row"
     model_class = LocalBaserowGetRowActionNode
     service_type = LocalBaserowGetRowUserServiceType.type
 
 
 class LocalBaserowListRowsNodeType(AutomationNodeActionNodeType):
-    type = "list_rows"
+    type = "local_baserow_list_rows"
+    compat_type = "list_rows"
     model_class = LocalBaserowListRowsActionNode
     service_type = LocalBaserowListRowsUserServiceType.type
 
 
 class LocalBaserowAggregateRowsNodeType(AutomationNodeActionNodeType):
-    type = "aggregate_rows"
+    type = "local_baserow_aggregate_rows"
+    compat_type = "aggregate_rows"
     model_class = LocalBaserowAggregateRowsActionNode
     service_type = LocalBaserowAggregateRowsUserServiceType.type
 
@@ -365,19 +372,22 @@ class AutomationNodeTriggerType(AutomationNodeType):
 
 
 class LocalBaserowRowsCreatedNodeTriggerType(AutomationNodeTriggerType):
-    type = "rows_created"
+    type = "local_baserow_rows_created"
+    compat_type = "rows_created"
     model_class = LocalBaserowRowsCreatedTriggerNode
     service_type = LocalBaserowRowsCreatedServiceType.type
 
 
 class LocalBaserowRowsUpdatedNodeTriggerType(AutomationNodeTriggerType):
-    type = "rows_updated"
+    type = "local_baserow_rows_updated"
+    compat_type = "rows_updated"
     model_class = LocalBaserowRowsUpdatedTriggerNode
     service_type = LocalBaserowRowsUpdatedServiceType.type
 
 
 class LocalBaserowRowsDeletedNodeTriggerType(AutomationNodeTriggerType):
-    type = "rows_deleted"
+    type = "local_baserow_rows_deleted"
+    compat_type = "rows_deleted"
     model_class = LocalBaserowRowsDeletedTriggerNode
     service_type = LocalBaserowRowsDeletedServiceType.type
 
