@@ -16,6 +16,7 @@ import {
   LocalBaserowListRowsServiceType,
   LocalBaserowAggregateRowsServiceType,
 } from '@baserow/modules/integrations/localBaserow/serviceTypes'
+import slackIntegration from '@baserow/modules/integrations/slack/assets/images/slack.svg'
 import localBaserowIntegration from '@baserow/modules/integrations/localBaserow/assets/images/localBaserowIntegration.svg'
 import {
   CoreHTTPRequestServiceType,
@@ -26,6 +27,7 @@ import {
 } from '@baserow/modules/integrations/core/serviceTypes'
 import { AIAgentServiceType } from '@baserow/modules/integrations/ai/serviceTypes'
 import { uuid } from '@baserow/modules/core/utils/string'
+import { SlackWriteMessageServiceType } from '@baserow/modules/integrations/slack/serviceTypes'
 
 export class NodeType extends Registerable {
   /**
@@ -843,5 +845,43 @@ export class AIAgentActionNodeType extends ActionNodeTypeMixin(NodeType) {
 
   getOrder() {
     return 8
+  }
+}
+
+export class SlackWriteMessageNodeType extends ActionNodeTypeMixin(NodeType) {
+  static getType() {
+    return 'slack_write_message'
+  }
+
+  getOrder() {
+    return 8
+  }
+
+  get iconClass() {
+    return ''
+  }
+
+  get image() {
+    return slackIntegration
+  }
+
+  get name() {
+    return this.app.i18n.t('nodeType.slackWriteMessageName')
+  }
+
+  getDefaultLabel({ node }) {
+    if (!node.service) return this.name
+    return node.service.channel.length
+      ? this.app.i18n.t('nodeType.slackWriteMessageLabel', {
+          channel: node.service.channel,
+        })
+      : this.name
+  }
+
+  get serviceType() {
+    return this.app.$registry.get(
+      'service',
+      SlackWriteMessageServiceType.getType()
+    )
   }
 }

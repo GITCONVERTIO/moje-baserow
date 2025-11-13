@@ -36,6 +36,7 @@ class AutomationConfig(AppConfig):
             LocalBaserowRowsDeletedNodeTriggerType,
             LocalBaserowRowsUpdatedNodeTriggerType,
             LocalBaserowUpdateRowNodeType,
+            SlackWriteMessageActionNodeType,
         )
         from baserow.contrib.automation.nodes.object_scopes import (
             AutomationNodeObjectScopeType,
@@ -167,6 +168,7 @@ class AutomationConfig(AppConfig):
                 LocalBaserowRowsDeletedNodeTriggerType()
             )
             automation_node_type_registry.register(CorePeriodicTriggerNodeType())
+            automation_node_type_registry.register(SlackWriteMessageActionNodeType())
             automation_node_type_registry.register(CoreHTTPTriggerNodeType())
             automation_node_type_registry.register(AIAgentActionNodeType())
 

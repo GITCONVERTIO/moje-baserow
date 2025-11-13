@@ -12,12 +12,16 @@ class IntegrationsConfig(AppConfig):
         from baserow.contrib.integrations.local_baserow.integration_types import (
             LocalBaserowIntegrationType,
         )
+        from baserow.contrib.integrations.slack.integration_types import (
+            SlackBotIntegrationType,
+        )
         from baserow.core.integrations.registries import integration_type_registry
         from baserow.core.services.registries import service_type_registry
 
         integration_type_registry.register(LocalBaserowIntegrationType())
         integration_type_registry.register(SMTPIntegrationType())
         integration_type_registry.register(AIIntegrationType())
+        integration_type_registry.register(SlackBotIntegrationType())
 
         from baserow.contrib.integrations.local_baserow.service_types import (
             LocalBaserowAggregateRowsUserServiceType,
@@ -38,6 +42,12 @@ class IntegrationsConfig(AppConfig):
         service_type_registry.register(LocalBaserowRowsCreatedServiceType())
         service_type_registry.register(LocalBaserowRowsUpdatedServiceType())
         service_type_registry.register(LocalBaserowRowsDeletedServiceType())
+
+        from baserow.contrib.integrations.slack.service_types import (
+            SlackWriteMessageServiceType,
+        )
+
+        service_type_registry.register(SlackWriteMessageServiceType())
 
         from baserow.contrib.integrations.core.service_types import (
             CoreHTTPRequestServiceType,

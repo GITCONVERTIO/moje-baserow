@@ -54,6 +54,7 @@ from baserow.contrib.integrations.core.models import (
     HTTPHeader,
     HTTPQueryParam,
 )
+from baserow.contrib.integrations.utils import get_http_request_function
 from baserow.core.formula.types import BaserowFormulaObject
 from baserow.core.formula.validator import (
     ensure_array,
@@ -535,24 +536,6 @@ class CoreHTTPRequestServiceType(CoreServiceType):
 
         return formulas
 
-    def _get_request_function(self) -> callable:
-        """
-        Return the appropriate request function based on production environment
-        or settings.
-        In production mode, the advocate library is used so that the internal
-        network can't be reached. This can be disabled by changing the Django
-        setting INTEGRATIONS_ALLOW_PRIVATE_ADDRESS.
-        """
-
-        if settings.INTEGRATIONS_ALLOW_PRIVATE_ADDRESS is True:
-            from requests import request
-
-            return request
-        else:
-            from advocate import request
-
-            return request
-
     def dispatch_data(
         self,
         service: CoreHTTPRequestService,
@@ -589,7 +572,7 @@ class CoreHTTPRequestServiceType(CoreServiceType):
         }
 
         try:
-            response = self._get_request_function()(
+            response = get_http_request_function()(
                 method=service.http_method,
                 url=resolved_values["url"],
                 headers=headers,
