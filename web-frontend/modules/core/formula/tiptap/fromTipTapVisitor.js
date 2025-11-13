@@ -12,6 +12,16 @@ export class FromTipTapVisitor {
         return this.visitDoc(node)
       case 'wrapper':
         return this.visitWrapper(node)
+      case 'function-formula-component':
+        return this.visitFunctionFormulaComponent(node)
+      case 'function-argument-comma':
+        return ','
+      case 'function-closing-paren':
+        return ')'
+      case 'operator-formula-component':
+        return this.visitOperatorFormulaComponent(node)
+      case 'hardBreak':
+        return this.visitHardBreak(node)
       default:
         return this.visitFunction(node)
     }
@@ -85,7 +95,7 @@ export class FromTipTapVisitor {
     if (this.mode === 'simple') {
       return `concat(${node.content.map(this.visit.bind(this)).join(', ')})`
     } else {
-      return node.content.map(this.visit.bind(this)).join('\n')
+      return node.content.map(this.visit.bind(this)).join('')
     }
   }
 
@@ -119,12 +129,7 @@ export class FromTipTapVisitor {
     let fullContent = ''
     for (let i = 0; i < content.length; i++) {
       const node = content[i]
-      if (node.type === 'text') {
-        // Remove zero-width spaces used for cursor positioning
-        fullContent += node.text.replace(/\u200B/g, '')
-      } else {
-        fullContent += this.visit(node)
-      }
+      fullContent += this.visit(node)
     }
 
     const argsStartIndex = fullContent.indexOf('(')
@@ -141,8 +146,15 @@ export class FromTipTapVisitor {
 
   visitText(node) {
     // Remove zero-width spaces used for cursor positioning
-    const cleanText = node.text.replace(/\u200B/g, '')
-    if (this.mode === 'simple') return `'${cleanText.replace(/'/g, "\\'")}'`
+    let cleanText = node.text.replace(/\u200B/g, '')
+
+    if (this.mode === 'simple') {
+      return `'${cleanText.replace(/'/g, "\\'")}'`
+    }
+
+    // In advanced mode, we need to escape actual newlines in the text
+    // to make them valid in string literals
+    cleanText = cleanText.replace(/\n/g, '\\n')
     return cleanText
   }
 
@@ -152,5 +164,24 @@ export class FromTipTapVisitor {
     )
 
     return formulaFunction?.fromNodeToFormula(node)
+  }
+
+  visitFunctionFormulaComponent(node) {
+    const functionName = node.attrs?.functionName || ''
+    // Since the function component now only contains name + opening parenthesis,
+    // we just return the function name and opening parenthesis.
+    // The arguments and closing parenthesis are handled separately as text nodes
+    return `${functionName}(`
+  }
+
+  visitOperatorFormulaComponent(node) {
+    const operatorSymbol = node.attrs?.operatorSymbol || ''
+    return operatorSymbol
+  }
+
+  visitHardBreak(node) {
+    // In advanced mode, convert hard breaks to actual newline characters
+    // that will be part of the string literal
+    return '\n'
   }
 }
