@@ -29,12 +29,16 @@ export class PreviousNodeDataProviderType extends DataProviderType {
 
     const previousNodeSchema = _.chain(previousNodes)
       // Retrieve the associated schema for each node
-      .map((previousNode) => [
+      .map((previousNode, index) => [
         previousNode,
         this.getNodeSchema({ automation, node: previousNode }),
       ])
       // Remove nodes without schema
       .filter(([_, schema]) => schema)
+      .map(([previousNode, schema], index) => [
+        previousNode,
+        { ...schema, order: index },
+      ])
       // Add an index number to the schema title for each node of the same
       // schema title. For example if we have two "Create a row in Customers"
       // nodes, then the schema titles will be:
@@ -46,7 +50,6 @@ export class PreviousNodeDataProviderType extends DataProviderType {
           {
             ...schema,
             title: `${schema.title}${index ? ` ${index + 1}` : ''}`,
-            order: index,
           },
         ])
       )
