@@ -6,7 +6,7 @@ from udspy.module.callbacks import ModuleContext, is_module_callback
 from baserow.contrib.database.rows.handler import RowHandler
 from baserow_enterprise.assistant.tools.database.tools import (
     get_list_rows_tool,
-    get_rows_meta_tool,
+    get_rows_tools_factory,
 )
 
 from .utils import fake_tool_helpers
@@ -211,7 +211,7 @@ def test_create_rows(data_fixture):
     table = res["table_a"]
     tool_helpers = fake_tool_helpers
 
-    meta_tool = get_rows_meta_tool(user, workspace, tool_helpers)
+    meta_tool = get_rows_tools_factory(user, workspace, tool_helpers)
     assert callable(meta_tool)
 
     tools_upgrade = meta_tool([table.id], ["create"])
@@ -277,7 +277,7 @@ def test_update_rows(data_fixture):
     table = res["table_a"]
     tool_helpers = fake_tool_helpers
 
-    meta_tool = get_rows_meta_tool(user, workspace, tool_helpers)
+    meta_tool = get_rows_tools_factory(user, workspace, tool_helpers)
     assert callable(meta_tool)
     tools_upgrade = meta_tool([table.id], ["update"])
     assert is_module_callback(tools_upgrade)
@@ -291,7 +291,7 @@ def test_update_rows(data_fixture):
     added_tools = mock_module.init_module.call_args[1]["tools"]
     added_tools_names = [tool.name for tool in added_tools]
     assert len(added_tools) == 1
-    assert f"update_rows_in_table_{table.id}_by_row_ids" in added_tools_names
+    assert f"update_rows_in_table_{table.id}" in added_tools_names
 
     table_model = table.get_model()
     assert table_model.objects.count() == 3
@@ -371,7 +371,7 @@ def test_delete_rows(data_fixture):
     table = res["table_a"]
     tool_helpers = fake_tool_helpers
 
-    meta_tool = get_rows_meta_tool(user, workspace, tool_helpers)
+    meta_tool = get_rows_tools_factory(user, workspace, tool_helpers)
     assert callable(meta_tool)
 
     tools_upgrade = meta_tool([table.id], ["delete"])
@@ -384,7 +384,7 @@ def test_delete_rows(data_fixture):
     added_tools = mock_module.init_module.call_args[1]["tools"]
     added_tools_names = [tool.name for tool in added_tools]
     assert len(added_tools) == 1
-    assert f"delete_rows_in_table_{table.id}_by_row_ids" in added_tools_names
+    assert f"delete_rows_in_table_{table.id}" in added_tools_names
     delete_table_rows = added_tools[0]
 
     table_model = table.get_model()

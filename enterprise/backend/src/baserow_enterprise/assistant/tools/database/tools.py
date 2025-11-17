@@ -171,13 +171,32 @@ class GetTablesSchemaToolType(AssistantToolType):
         return get_tables_schema_tool(user, workspace, tool_helpers)
 
 
-def get_create_tables_tool(
+def get_table_and_fields_tools_factory(
     user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
 ) -> Callable[[list[TableItemCreate]], list[dict[str, Any]]]:
-    """
-    Returns a function that creates a set of tables in a given database the user has
-    access to
-    """
+    def create_fields(
+        table_id: int, fields: list[AnyFieldItemCreate]
+    ) -> list[AnyFieldItem]:
+        """
+        Creates fields in the specified table.
+
+        - Choose the most appropriate field type for each field.
+        - Field names must be unique within a table: check existing names
+          when needed and skip duplicates.
+        - For link_row fields, ensure the linked table already exists in
+          the same database; create it first if needed.
+        """
+
+        nonlocal user, workspace, tool_helpers
+
+        if not fields:
+            return []
+
+        table = utils.filter_tables(user, workspace).get(id=table_id)
+
+        with transaction.atomic():
+            created_fields = utils.create_fields(user, table, fields, tool_helpers)
+            return {"created_fields": [field.model_dump() for field in created_fields]}
 
     def create_tables(
         database_id: int, tables: list[TableItemCreate], add_sample_rows: bool = True
@@ -276,64 +295,48 @@ def get_create_tables_tool(
             "notes": notes,
         }
 
-    return create_tables
+    def load_table_and_fields_tools():
+        """
+        TOOL LOADER: Loads table and field creation tools for a database.
+
+        After calling this loader, you will have access to:
+        - create_tables: Create new tables in a database with fields and sample rows
+        - create_fields: Add new fields to an existing table
+
+        Use this when you need to create tables or add fields but don't have the tools.
+        """
+
+        @udspy.module_callback
+        def _load_table_and_fields_tools(context):
+            nonlocal user, workspace, tool_helpers
+
+            observation = ["New tools are now available.\n"]
+
+            create_tool = udspy.Tool(create_tables)
+            new_tools = [create_tool]
+            observation.append("- Use `create_tables` to create tables in a database.")
+
+            create_fields_tool = udspy.Tool(create_fields)
+            new_tools.append(create_fields_tool)
+            observation.append("- Use `create_fields` to create fields in a table.")
+
+            # Re-initialize the module with the new tools for the next iteration
+            context.module.init_module(tools=context.module._tools + new_tools)
+            return "\n".join(observation)
+
+        return _load_table_and_fields_tools
+
+    return load_table_and_fields_tools
 
 
-class CreateTablesToolType(AssistantToolType):
-    type = "create_tables"
+class TableAndFieldsToolFactoryToolType(AssistantToolType):
+    type = "table_and_fields_tool_factory"
 
     @classmethod
     def get_tool(
         cls, user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
     ) -> Callable[[Any], Any]:
-        return get_create_tables_tool(user, workspace, tool_helpers)
-
-
-def get_create_fields_tool(
-    user: AbstractUser,
-    workspace: Workspace,
-    tool_helpers: "ToolHelpers",
-) -> Callable[[int, list[AnyFieldItemCreate]], list[dict[str, Any]]]:
-    """
-    Returns a function that creates fields in a given table the user has access to
-    in the current workspace.
-    """
-
-    def create_fields(
-        table_id: int, fields: list[AnyFieldItemCreate]
-    ) -> list[AnyFieldItem]:
-        """
-        Creates fields in the specified table.
-
-        - Choose the most appropriate field type for each field.
-        - Field names must be unique within a table: check existing names
-          when needed and skip duplicates.
-        - For link_row fields, ensure the linked table already exists in
-          the same database; create it first if needed.
-        """
-
-        nonlocal user, workspace, tool_helpers
-
-        if not fields:
-            return []
-
-        table = utils.filter_tables(user, workspace).get(id=table_id)
-
-        with transaction.atomic():
-            created_fields = utils.create_fields(user, table, fields, tool_helpers)
-            return {"created_fields": [field.model_dump() for field in created_fields]}
-
-    return create_fields
-
-
-class CreateFieldsToolType(AssistantToolType):
-    type = "create_fields"
-
-    @classmethod
-    def get_tool(
-        cls, user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
-    ) -> Callable[[Any], Any]:
-        return get_create_fields_tool(user, workspace, tool_helpers)
+        return get_table_and_fields_tools_factory(user, workspace, tool_helpers)
 
 
 def get_list_rows_tool(
@@ -347,7 +350,7 @@ def get_list_rows_tool(
     def list_rows(
         table_id: int,
         offset: int = 0,
-        limit: int = 10,
+        limit: int = 20,
         field_ids: list[int] | None = None,
     ) -> list[dict[str, Any]]:
         """
@@ -395,34 +398,43 @@ class ListRowsToolType(AssistantToolType):
         return get_list_rows_tool(user, workspace, tool_helpers)
 
 
-def get_rows_meta_tool(
+def get_rows_tools_factory(
     user: AbstractUser,
     workspace: Workspace,
     tool_helpers: "ToolHelpers",
 ) -> Callable[[int, list[dict[str, Any]]], list[Any]]:
-    """
-    Returns a meta-tool that, given a table ID, returns an observation that says that
-    new tools are available and a list of tools to create, update and delete rows
-    in that table.
-    """
-
-    def get_rows_tools(
+    def load_rows_tools(
         table_ids: list[int],
         operations: list[Literal["create", "update", "delete"]],
     ) -> Tuple[str, list[Callable[[Any], Any]]]:
         """
-        Generates row operation tools for specified tables. Required before:
-        create/update/delete rows.
+        TOOL LOADER: Loads row manipulation tools for specified tables.
+        Make sure to have the correct table IDs.
+
+        After calling this loader, you will have access to table-specific tools:
+        - create_rows_in_table_X: Create new rows in table X
+        - update_rows_in_table_X: Update existing rows in table X by their IDs
+        - delete_rows_in_table_X: Delete rows from table X by their IDs
+
+        Use this when you need to create, update, or delete rows but don't have
+        the tools.
+        Call with the table IDs and desired operations (create/update/delete).
         """
 
         @udspy.module_callback
-        def load_rows_tools(context):
+        def _load_rows_tools(context):
             nonlocal user, workspace, tool_helpers
 
-            observation = ["New tools are now available.\n"]
+            tables = utils.filter_tables(user, workspace).filter(id__in=table_ids)
+            if not tables:
+                observation = [
+                    "No valid tables found for the given IDs. ",
+                    "Make sure the table IDs are correct.",
+                ]
+                return "\n".join(observation)
 
             new_tools = []
-            tables = utils.filter_tables(user, workspace).filter(id__in=table_ids)
+            observation = ["New tools are now available.\n"]
             for table in tables:
                 table_tools = utils.get_table_rows_tools(
                     user, workspace, tool_helpers, table
@@ -455,19 +467,19 @@ def get_rows_meta_tool(
             context.module.init_module(tools=context.module._tools + new_tools)
             return "\n".join(observation)
 
-        return load_rows_tools
+        return _load_rows_tools
 
-    return get_rows_tools
+    return load_rows_tools
 
 
-class GetRowsToolsToolType(AssistantToolType):
-    type = "get_rows_tools"
+class RowsToolFactoryToolType(AssistantToolType):
+    type = "rows_tool_factory"
 
     @classmethod
     def get_tool(
         cls, user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
     ) -> Callable[[Any], Any]:
-        return get_rows_meta_tool(user, workspace, tool_helpers)
+        return get_rows_tools_factory(user, workspace, tool_helpers)
 
 
 def get_list_views_tool(
@@ -523,13 +535,46 @@ class ListViewsToolType(AssistantToolType):
         return get_list_views_tool(user, workspace, tool_helpers)
 
 
-def get_create_views_tool(
+def get_views_tool_factory(
     user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
 ) -> Callable[[int, list[str]], list[str]]:
-    """
-    Returns a function that creates views in a given table the user has access to
-    in the current workspace.
-    """
+    def create_view_filters(
+        view_filters: list[ViewFiltersArgs],
+    ) -> list[AnyViewFilterItem]:
+        """
+        Creates filters in the specified views.
+        """
+
+        nonlocal user, workspace, tool_helpers
+
+        if not view_filters:
+            return []
+
+        created_view_filters = []
+        for vf in view_filters:
+            orm_view = utils.get_view(user, vf.view_id)
+            tool_helpers.update_status(
+                _("Creating filters in %(view_name)s...") % {"view_name": orm_view.name}
+            )
+
+            fields = {f.id: f for f in orm_view.table.field_set.all()}
+            created_filters = []
+            with transaction.atomic():
+                for filter in vf.filters:
+                    try:
+                        orm_filter = utils.create_view_filter(
+                            user, orm_view, fields, filter
+                        )
+                    except ValueError as e:
+                        logger.warning(f"Skipping filter creation: {e}")
+                        continue
+
+                    created_filters.append({"id": orm_filter.id, **filter.model_dump()})
+            created_view_filters.append(
+                {"view_id": vf.view_id, "filters": created_filters}
+            )
+
+        return {"created_view_filters": created_view_filters}
 
     def create_views(
         table_id: int, views: list[AnyViewItemCreate]
@@ -540,7 +585,7 @@ def get_create_views_tool(
 
         - Choose the most appropriate view type for each view.
         - View names must be unique within a table: check existing names when needed and
-          skip duplicates.
+          avoid duplicates.
         """
 
         nonlocal user, workspace, tool_helpers
@@ -584,80 +629,51 @@ def get_create_views_tool(
 
         return {"created_views": created_views}
 
-    return create_views
+    def load_views_tools():
+        """
+        TOOL LOADER: Loads tools to manage views and filters
+        (grid, gallery, form, kanban, calendar and timeline).
+
+        After calling this loader, you will be able to:
+        - create_views: Create grid, gallery, form, kanban, calendar and timeline views
+        - create_view_filters: Create filters for specific views to filter rows
+
+        Use this when you need to create views or filters but don't have the tools yet.
+        """
+
+        @udspy.module_callback
+        def _load_views_tools(context):
+            nonlocal user, workspace, tool_helpers
+
+            observation = ["New tools are now available.\n"]
+
+            create_tool = udspy.Tool(create_views)
+            new_tools = [create_tool]
+            observation.append("- Use `create_views` to create views.")
+
+            create_filters_tool = udspy.Tool(create_view_filters)
+            new_tools.append(create_filters_tool)
+            observation.append(
+                "- Use `create_view_filters` to create filters in views."
+            )
+
+            # Re-initialize the module with the new tools for the next iteration
+            context.module.init_module(tools=context.module._tools + new_tools)
+            return "\n".join(observation)
+
+        return _load_views_tools
+
+    return load_views_tools
 
 
-class CreateViewsToolType(AssistantToolType):
-    type = "create_views"
+class ViewsToolFactoryToolType(AssistantToolType):
+    type = "views_tool_factory"
 
     @classmethod
     def get_tool(
         cls, user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
     ) -> Callable[[Any], Any]:
-        return get_create_views_tool(user, workspace, tool_helpers)
-
-
-def get_create_view_filters_tool(
-    user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
-) -> Callable[[int, list[str]], list[str]]:
-    """
-    Returns a function that creates views in a given table the user has access to
-    in the current workspace.
-    """
-
-    def create_view_filters(
-        view_filters: list[ViewFiltersArgs],
-    ) -> list[AnyViewFilterItem]:
-        """
-        Creates filters in the specified view.
-
-        - Choose the most appropriate filter for each view.
-        - Filter names must be unique within a view: check existing names
-          when needed and skip duplicates.
-        """
-
-        nonlocal user, workspace, tool_helpers
-
-        if not view_filters:
-            return []
-
-        created_view_filters = []
-        for vf in view_filters:
-            orm_view = utils.get_view(user, vf.view_id)
-            tool_helpers.update_status(
-                _("Creating filters in %(view_name)s...") % {"view_name": orm_view.name}
-            )
-
-            fields = {f.id: f for f in orm_view.table.field_set.all()}
-            created_filters = []
-            with transaction.atomic():
-                for filter in vf.filters:
-                    try:
-                        orm_filter = utils.create_view_filter(
-                            user, orm_view, fields, filter
-                        )
-                    except ValueError as e:
-                        logger.warning(f"Skipping filter creation: {e}")
-                        continue
-
-                    created_filters.append({"id": orm_filter.id, **filter.model_dump()})
-            created_view_filters.append(
-                {"view_id": vf.view_id, "filters": created_filters}
-            )
-
-        return {"created_view_filters": created_view_filters}
-
-    return create_view_filters
-
-
-class CreateViewFiltersToolType(AssistantToolType):
-    type = "create_view_filters"
-
-    @classmethod
-    def get_tool(
-        cls, user: AbstractUser, workspace: Workspace, tool_helpers: "ToolHelpers"
-    ) -> Callable[[Any], Any]:
-        return get_create_view_filters_tool(user, workspace, tool_helpers)
+        return get_views_tool_factory(user, workspace, tool_helpers)
 
 
 def get_formula_type_tool(

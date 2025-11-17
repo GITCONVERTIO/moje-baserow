@@ -22,9 +22,11 @@ from baserow.api.schemas import get_error_schema
 from baserow.api.serializers import get_example_pagination_serializer_class
 from baserow.api.sessions import set_client_undo_redo_action_group_id
 from baserow.core.exceptions import UserNotInWorkspace, WorkspaceDoesNotExist
-from baserow.core.feature_flags import FF_ASSISTANT, feature_flag_is_enabled
 from baserow.core.handler import CoreHandler
-from baserow_enterprise.assistant.assistant import set_assistant_cancellation_key
+from baserow_enterprise.assistant.assistant import (
+    check_lm_ready_or_raise,
+    set_assistant_cancellation_key,
+)
 from baserow_enterprise.assistant.exceptions import (
     AssistantChatDoesNotExist,
     AssistantChatMessagePredictionDoesNotExist,
@@ -99,8 +101,6 @@ class AssistantChatsView(APIView):
         }
     )
     def get(self, request: Request, query_params) -> Response:
-        feature_flag_is_enabled(FF_ASSISTANT, raise_if_disabled=True)
-
         workspace_id = query_params["workspace_id"]
         workspace = CoreHandler().get_workspace(workspace_id)
 
@@ -147,8 +147,6 @@ class AssistantChatView(APIView):
         }
     )
     def post(self, request: Request, chat_uuid: str, data) -> StreamingHttpResponse:
-        feature_flag_is_enabled(FF_ASSISTANT, raise_if_disabled=True)
-
         ui_context = UIContext.from_validate_request(request, data["ui_context"])
         workspace_id = ui_context.workspace.id
         workspace = CoreHandler().get_workspace(workspace_id)
@@ -159,6 +157,7 @@ class AssistantChatView(APIView):
             context=workspace,
         )
 
+        check_lm_ready_or_raise()
         handler = AssistantHandler()
         chat, _ = handler.get_or_create_chat(request.user, workspace, chat_uuid)
 
@@ -174,7 +173,6 @@ class AssistantChatView(APIView):
         chat.user.profile.timezone = ui_context.timezone
 
         assistant = handler.get_assistant(chat)
-        assistant.check_llm_ready_or_raise()
         human_message = HumanMessage(content=data["content"], ui_context=ui_context)
 
         async def stream_assistant_messages():
@@ -226,8 +224,6 @@ class AssistantChatView(APIView):
         }
     )
     def get(self, request: Request, chat_uuid: str) -> Response:
-        feature_flag_is_enabled(FF_ASSISTANT, raise_if_disabled=True)
-
         handler = AssistantHandler()
         chat = handler.get_chat(request.user, chat_uuid)
 
@@ -265,8 +261,6 @@ class AssistantChatView(APIView):
         }
     )
     def delete(self, request: Request, chat_uuid: str) -> Response:
-        feature_flag_is_enabled(FF_ASSISTANT, raise_if_disabled=True)
-
         handler = AssistantHandler()
         chat = handler.get_chat(request.user, chat_uuid)
 
@@ -307,8 +301,6 @@ class AssistantChatMessageFeedbackView(APIView):
         }
     )
     def put(self, request: Request, message_id: int, data) -> Response:
-        feature_flag_is_enabled(FF_ASSISTANT, raise_if_disabled=True)
-
         handler = AssistantHandler()
         message = handler.get_chat_message_by_id(request.user, message_id)
         try:
