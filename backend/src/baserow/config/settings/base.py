@@ -11,10 +11,7 @@ from urllib.parse import urljoin, urlparse
 from django.core.exceptions import ImproperlyConfigured
 
 import dj_database_url
-import sentry_sdk
 from corsheaders.defaults import default_headers
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
 
 from baserow.config.settings.utils import (
     Setting,
@@ -1303,11 +1300,33 @@ for plugin in [*BASEROW_BUILT_IN_PLUGINS, *BASEROW_BACKEND_PLUGIN_NAMES]:
         print(e)
 
 
+# Libraries that should be lazy-loaded (imported inside functions/methods) to reduce
+# memory footprint at startup. If any of these are found in sys.modules during startup,
+# a warning will be shown suggesting to either lazy-load them or remove them from this
+# list if they're legitimately needed at startup.
+BASEROW_LAZY_LOADED_LIBRARIES = [
+    "openai",
+    "anthropic",
+    "mistralai",
+    "ollama",
+    "langchain_core",
+    "jira2markdown",
+    "saml2",
+    "openpyxl",
+    "numpy",
+]
+
+
 SENTRY_BACKEND_DSN = os.getenv("SENTRY_BACKEND_DSN")
 SENTRY_DSN = SENTRY_BACKEND_DSN or os.getenv("SENTRY_DSN")
-SENTRY_DENYLIST = DEFAULT_DENYLIST + ["username", "email", "name"]
 
 if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.scrubber import DEFAULT_DENYLIST, EventScrubber
+
+    SENTRY_DENYLIST = DEFAULT_DENYLIST + ["username", "email", "name"]
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration(signals_spans=False, middleware_spans=False)],
@@ -1315,6 +1334,8 @@ if SENTRY_DSN:
         event_scrubber=EventScrubber(recursive=True, denylist=SENTRY_DENYLIST),
         environment=os.getenv("SENTRY_ENVIRONMENT", ""),
     )
+else:
+    BASEROW_LAZY_LOADED_LIBRARIES.append("sentry_sdk")
 
 BASEROW_OPENAI_API_KEY = os.getenv("BASEROW_OPENAI_API_KEY", None)
 BASEROW_OPENAI_ORGANIZATION = os.getenv("BASEROW_OPENAI_ORGANIZATION", "") or None
