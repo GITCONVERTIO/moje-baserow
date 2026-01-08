@@ -57,6 +57,24 @@ class TOTPAuthProviderModel(TwoFactorAuthProviderModel):
         return self.enabled
 
 
+class TOTPUsedCode(models.Model):
+    user = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="totp_used_codes",
+    )
+    used_at = models.DateTimeField()
+    code = models.CharField(max_length=64, help_text="Hash of the used code")
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["user", "code"],
+                name="totp_usedcode_user_code_idx",
+            ),
+        ]
+
+
 class TwoFactorAuthRecoveryCode(models.Model):
     user = models.ForeignKey(
         "auth.User",
