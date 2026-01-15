@@ -1131,5 +1131,28 @@
     "verificationFailedDescription": "The entered code is not valid.",
     "provisioningFailed": "Provisioning failed",
     "checkSuccess": "Successfully enabled two-factor authentication"
+  },
+  "plannerSidebarWorkspace": {
+    "title": "Planner"
+  },
+  "plannerPage": {
+    "title": "Planner",
+    "dayView": "Day",
+    "weekView": "Week",
+    "today": "Today",
+    "addEvent": "Add Event"
+  },
+  "plannerEventModal": {
+    "newEvent": "New Event",
+    "editEvent": "Edit Event",
+    "title": "Title",
+    "titlePlaceholder": "Enter event title",
+    "date": "Date",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "description": "Description",
+    "descriptionPlaceholder": "Add event description (optional)",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this event?"
   }
 }

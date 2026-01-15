@@ -54,6 +54,11 @@ export const routes = [
     component: path.resolve(__dirname, 'pages/workspace.vue'),
   },
   {
+    name: 'workspace-planner',
+    path: '/workspace/:workspaceId/planner',
+    component: path.resolve(__dirname, 'pages/planner.vue'),
+  },
+  {
     name: 'workspace-invitation',
     path: '/workspace-invitation/:token',
     component: path.resolve(__dirname, 'pages/workspaceInvitation.vue'),

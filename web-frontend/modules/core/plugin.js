@@ -149,6 +149,8 @@ import {
   AdminRoleType,
   MemberRoleType,
 } from '@baserow/modules/database/roleTypes'
+import { PlannerPlugin } from '@baserow/modules/core/plannerPlugin'
+import plannerStore from '@baserow/modules/core/store/planner'
 
 export default (context, inject) => {
   const { store, isDev, app } = context
@@ -259,6 +261,7 @@ export default (context, inject) => {
   store.registerModule('userSourceUser', userSourceUserStore)
   store.registerModule('workspaceSearch', workspaceSearchStore)
   store.registerModule('routeMounted', routeMounted)
+  store.registerModule('planner', plannerStore)
 
   registry.register('authProvider', new PasswordAuthProviderType(context))
   registry.register('job', new DuplicateApplicationJobType(context))
@@ -366,4 +369,6 @@ export default (context, inject) => {
   registry.register('onboarding', new InviteOnboardingType(context))
 
   registry.register('guidedTour', new SidebarGuidedTourType(context))
+
+  registry.register('plugin', new PlannerPlugin(context))
 }

@@ -1045,5 +1045,28 @@
         "createEndpoint": "Utwórz adres końcowy",
         "backToOverview": "Powrót",
         "createNewTitle": "Utwórz adres końcowy serwera MCP"
+    },
+    "plannerSidebarWorkspace": {
+        "title": "Planer"
+    },
+    "plannerPage": {
+        "title": "Planer",
+        "dayView": "Dzień",
+        "weekView": "Tydzień",
+        "today": "Dzisiaj",
+        "addEvent": "Dodaj wydarzenie"
+    },
+    "plannerEventModal": {
+        "newEvent": "Nowe wydarzenie",
+        "editEvent": "Edytuj wydarzenie",
+        "title": "Tytuł",
+        "titlePlaceholder": "Wprowadź tytuł wydarzenia",
+        "date": "Data",
+        "startTime": "Czas rozpoczęcia",
+        "endTime": "Czas zakończenia",
+        "description": "Opis",
+        "descriptionPlaceholder": "Dodaj opis wydarzenia (opcjonalnie)",
+        "delete": "Usuń",
+        "deleteConfirm": "Czy na pewno chcesz usunąć to wydarzenie?"
     }
 }
