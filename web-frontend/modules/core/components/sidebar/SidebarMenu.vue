@@ -178,11 +178,23 @@ export default {
   },
   computed: {
     sidebarWorkspaceComponents() {
-      return Object.values(this.$registry.getAll('plugin'))
-        .flatMap((plugin) =>
-          plugin.getSidebarWorkspaceComponents(this.selectedWorkspace)
-        )
-        .filter((component) => component !== null)
+      if (!this.$registry) {
+        return []
+      }
+      try {
+        return Object.values(this.$registry.getAll('plugin'))
+          .flatMap((plugin) => {
+            if (plugin && typeof plugin.getSidebarWorkspaceComponents === 'function') {
+              const components = plugin.getSidebarWorkspaceComponents(this.selectedWorkspace)
+              return components || []
+            }
+            return []
+          })
+          .filter((component) => component !== null)
+      } catch (error) {
+        console.error('Error loading sidebar workspace components:', error)
+        return []
+      }
     },
     ...mapGetters({
       unreadNotificationCount: 'notification/getUnreadCount',
